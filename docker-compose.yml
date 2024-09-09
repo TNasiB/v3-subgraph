@@ -48,3 +48,25 @@ services:
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data:Z
+  nginx:
+    image: nginx:latest
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
+      - ./nginx/html:/usr/share/nginx/html
+    depends_on:
+      - graph-node
+    networks:
+      - my-custom-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
+      - ./nginx/html:/usr/share/nginx/html
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'
